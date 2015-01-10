@@ -1,3 +1,4 @@
+lastStates = {}
 module.exports = (helper) ->
   pulsesToBinaryMapping = {
     '10': '0' #binary 0
@@ -14,15 +15,29 @@ module.exports = (helper) ->
     values:
       id:
         type: "number"
-      presence:
+      contact:
         type: "boolean"
     brands: ["No brand"]
     pulseLengths: [295, 886, 9626]
     pulseCount: 50
     decodePulses: (pulses) ->
       binary = helper.map(pulses, pulsesToBinaryMapping)
+      id = helper.binaryToNumber(binary, 0, 19)
+      time = new Date().getTime()
+      if lastStates[id]?
+        if time - lastStates[id].time > 1000 # the contact sends multiple messages
+          # switch state
+          contact = not lastStates[id].state
+          lastStates[id].state = contact
+        else
+          # keep state
+          contact = lastStates[id].state
+      else
+        # initial state
+        lastStates[id] = {time: time, state: true}
+        contact = true
       return result = {
-        id: helper.binaryToNumber(binary, 0, 19)
-        presence: true
+        id: id
+        contact: contact
       }
   }
